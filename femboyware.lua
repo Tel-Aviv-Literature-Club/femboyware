@@ -663,7 +663,9 @@ function UI.mount(app)
                 end))
                 sync = function() if control.Value ~= feature.values[option.key] then control:SetValue(feature.values[option.key]) end end
             elseif option.kind == "color" then
-                control = body:AddLabel(option.label):AddColorPicker(id, {Default = Color3.fromHex(option.default), Tooltip = option.tooltip})
+                -- The fork's AddColorPicker returns its parent label; the picker lives in Options.
+                body:AddLabel(option.label):AddColorPicker(id, {Default = Color3.fromHex(option.default)})
+                control = options[id]
                 control:OnChanged(safely(function()
                     local value = hex(control.Value)
                     if feature.values[option.key] ~= value then registry:set(feature.id, option.key, value) end
@@ -1696,9 +1698,11 @@ return function(app)
         rebuild()
         if values.gui then
             -- The same roots kicia patches: Roblox UI, chat, and the game HUD.
-            local core = game:GetService("CoreGui")
-            watch(app.rivals:path(core, "RobloxGui"))
-            watch(app.rivals:path(core, "ExperienceChat"))
+            local ok, core = pcall(function() return game:GetService("CoreGui") end)
+            if ok and core then
+                watch(app.rivals:path(core, "RobloxGui"))
+                watch(app.rivals:path(core, "ExperienceChat"))
+            end
             watch(app.rivals:path(app.player, "PlayerGui/MainGui"))
             watch(app.player:FindFirstChildOfClass("PlayerGui"))
             watch(workspace)
